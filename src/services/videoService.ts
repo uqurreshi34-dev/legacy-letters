@@ -8,7 +8,7 @@ import { VideoGenerationTask, GeneratedVideo } from '@interfaces/GeneratedConten
 
 const RUNWAY_BASE = 'https://api.dev.runwayml.com/v1';
 const POLL_INTERVAL_MS = 4000;
-const MAX_POLLS = 60; // 4 min timeout
+const MAX_POLLS = 60; // 4 mins timeout
 
 export async function generateVideoFromPhoto(
   memoryId: string,
