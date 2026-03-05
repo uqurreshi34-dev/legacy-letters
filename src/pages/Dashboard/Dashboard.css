@@ -1,0 +1,112 @@
+.dashboard {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+  
+  .dashboard__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  
+  .dashboard__greeting {
+    font-size: 13px;
+    color: #8a7060;
+    margin: 0 0 4px 0;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  
+  .dashboard__title {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    color: #f5ede0;
+    margin: 0 0 8px 0;
+    letter-spacing: -0.5px;
+  }
+  
+  .dashboard__meta {
+    font-size: 14px;
+    color: #5a4a3a;
+    margin: 0;
+  }
+  
+  .dashboard__add-btn {
+    background: transparent;
+    color: #D4AF37;
+    border: 1px solid #D4AF37;
+    padding: 13px 24px;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+  }
+  
+  .dashboard__add-btn:hover {
+    background: #D4AF37;
+    color: #0a0804;
+  }
+  
+  .dashboard__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  
+  .dashboard__loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 80px 0;
+    color: #8a7060;
+    font-size: 14px;
+  }
+  
+  .dashboard__error {
+    background: rgba(200, 60, 60, 0.1);
+    border: 1px solid rgba(200, 60, 60, 0.3);
+    border-radius: 6px;
+    padding: 16px 20px;
+    color: #e08080;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  
+  .dashboard__empty {
+    text-align: center;
+    padding: 80px 24px;
+  }
+  
+  .dashboard__empty-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: #8a7060;
+    margin: 0 0 8px 0;
+  }
+  
+  .dashboard__empty-sub {
+    font-size: 14px;
+    color: #5a4a3a;
+    margin: 0 0 32px 0;
+  }
+  
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #2a2218;
+    border-top-color: #D4AF37;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }

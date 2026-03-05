@@ -1,0 +1,172 @@
+.add-memory {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+  
+  .add-memory__back {
+    background: none;
+    border: none;
+    color: #8a7060;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0 0 20px 0;
+    display: block;
+    transition: color 0.2s;
+  }
+  
+  .add-memory__back:hover {
+    color: #D4AF37;
+  }
+  
+  .add-memory__title {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    color: #f5ede0;
+    margin: 0 0 8px 0;
+  }
+  
+  .add-memory__sub {
+    font-size: 14px;
+    color: #8a7060;
+    margin: 0 0 32px 0;
+    line-height: 1.6;
+  }
+  
+  .add-memory__error {
+    background: rgba(200, 60, 60, 0.1);
+    border: 1px solid rgba(200, 60, 60, 0.3);
+    border-radius: 6px;
+    padding: 14px 18px;
+    color: #e08080;
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+  
+  .add-memory__card {
+    background: #141009;
+    border: 1px solid #2a2218;
+    border-radius: 8px;
+    padding: 32px;
+  }
+  
+  .add-memory__section {
+    margin-bottom: 24px;
+  }
+  
+  .add-memory__label {
+    display: block;
+    font-size: 11px;
+    color: #8a7060;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  
+  .add-memory__input {
+    width: 100%;
+    background: #0a0804;
+    border: 1px solid #2a2218;
+    border-radius: 4px;
+    padding: 12px 16px;
+    color: #e8dcc8;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+  }
+  
+  .add-memory__input:focus {
+    border-color: #D4AF37;
+  }
+  
+  .add-memory__textarea {
+    width: 100%;
+    background: #0a0804;
+    border: 1px solid #2a2218;
+    border-radius: 4px;
+    padding: 12px 16px;
+    color: #e8dcc8;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    resize: vertical;
+    line-height: 1.7;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+  }
+  
+  .add-memory__textarea:focus {
+    border-color: #D4AF37;
+  }
+  
+  .add-memory__divider {
+    height: 1px;
+    background: #2a2218;
+    margin: 8px 0 24px 0;
+  }
+  
+  .add-memory__gift-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 15px;
+    color: #D4AF37;
+    font-family: 'DM Mono', monospace;
+  }
+  
+  .add-memory__checkbox {
+    accent-color: #D4AF37;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+  
+  .add-memory__gift-hint {
+    font-size: 13px;
+    color: #5a4a3a;
+    margin: 8px 0 0 26px;
+    line-height: 1.6;
+  }
+  
+  /* Shared button styles */
+  .btn-primary {
+    background: #D4AF37;
+    color: #0a0804;
+    border: none;
+    padding: 15px 32px;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: opacity 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .spinner-inline {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(10, 8, 4, 0.3);
+    border-top-color: #0a0804;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
