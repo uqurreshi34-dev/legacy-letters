@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MemoryCard from '@components/MemoryCard/MemoryCard';
 import { Memory } from '@interfaces/Memory';
@@ -6,11 +6,11 @@ import { UserProfile } from '@interfaces/UserProfile';
 import { getAllMemories } from '@services/memoryService';
 import './Dashboard.css';
 
-interface DashboardProps {
+type DashboardProps = {
   profile: UserProfile;
-}
+};
 
-const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
+export default function Dashboard({ profile }: DashboardProps) {
   const navigate = useNavigate();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,12 +43,21 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
             {memories.length} memories · {readyCount} letters ready for {profile.childrenNames}
           </p>
         </div>
-        <button
-          className="dashboard__add-btn"
-          onClick={() => navigate('/add')}
-        >
-          + Add Memory
-        </button>
+
+        <div className="dashboard__header-actions">
+          <button
+            className="dashboard__settings-btn"
+            onClick={() => navigate('/settings')}
+          >
+            ⚙ Settings
+          </button>
+          <button
+            className="dashboard__add-btn"
+            onClick={() => navigate('/add')}
+          >
+            + Add Memory
+          </button>
+        </div>
       </header>
 
       {loading && (
@@ -90,6 +99,4 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
       )}
     </main>
   );
-};
-
-export default Dashboard;
+}
