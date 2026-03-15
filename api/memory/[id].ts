@@ -38,16 +38,17 @@ export default async function handler(
     return;
   }
 
-  // PATCH /api/memory/:id — update script, video url, or status
+  // PATCH /api/memory/:id — update script, video url, photo url, or status
   if (req.method === 'PATCH') {
     try {
-      const { generatedScript, videoUrl, status } = req.body;
+      const { generatedScript, videoUrl, photoUrl, status } = req.body;
 
       await sql`
         UPDATE memories
         SET
           generated_script = COALESCE(${generatedScript ?? null}, generated_script),
           video_url        = COALESCE(${videoUrl        ?? null}, video_url),
+          photo_url        = COALESCE(${photoUrl        ?? null}, photo_url),
           status           = COALESCE(${status          ?? null}, status),
           updated_at       = NOW()
         WHERE id = ${id}
@@ -56,6 +57,18 @@ export default async function handler(
     } catch (err) {
       console.error(`PATCH /api/memory/${id} error:`, err);
       res.status(500).json({ error: 'Failed to update memory' });
+    }
+    return;
+  }
+
+  // DELETE /api/memory/:id
+  if (req.method === 'DELETE') {
+    try {
+      await sql`DELETE FROM memories WHERE id = ${id}`;
+      res.status(200).json({ success: true });
+    } catch (err) {
+      console.error(`DELETE /api/memory/${id} error:`, err);
+      res.status(500).json({ error: 'Failed to delete memory' });
     }
     return;
   }

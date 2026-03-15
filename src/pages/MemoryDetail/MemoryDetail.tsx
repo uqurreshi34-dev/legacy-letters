@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import GiftBox from '@components/GiftBox/GiftBox';
 import VideoPlayer from '@components/VideoPlayer/VideoPlayer';
@@ -6,26 +6,32 @@ import { Memory } from '@interfaces/Memory';
 import { UserProfile } from '@interfaces/UserProfile';
 import { generateMemoryScript } from '@services/claudeService';
 import { generateVideoFromPhoto } from '@services/videoService';
+import { uploadPhoto } from '@services/uploadService';
 import {
   getMemoryById,
   updateMemoryScript,
   updateMemoryVideo,
+  updateMemoryPhoto,
+  deleteMemory,
   setMemoryStatus,
 } from '@services/memoryService';
 import './MemoryDetail.css';
 
-interface MemoryDetailProps {
+type MemoryDetailProps = {
   profile: UserProfile;
-}
+};
 
-const MemoryDetail: React.FC<MemoryDetailProps> = ({ profile }) => {
+export default function MemoryDetail({ profile }: MemoryDetailProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const [memory, setMemory] = useState<Memory | null>(null);
   const [loading, setLoading] = useState(true);
   const [generatingScript, setGeneratingScript] = useState(false);
   const [generatingVideo, setGeneratingVideo] = useState(false);
+  const [replacingPhoto, setReplacingPhoto] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -34,7 +40,7 @@ const MemoryDetail: React.FC<MemoryDetailProps> = ({ profile }) => {
       try {
         const data = await getMemoryById(id);
         setMemory(data);
-      } catch (err) {
+      } catch {
         setError('Could not load memory.');
       } finally {
         setLoading(false);
@@ -50,7 +56,9 @@ const MemoryDetail: React.FC<MemoryDetailProps> = ({ profile }) => {
     try {
       const result = await generateMemoryScript(memory, profile);
       await updateMemoryScript(memory.id, result.script);
-      setMemory((prev) => prev ? { ...prev, generatedScript: result.script, status: 'ready' } : prev);
+      setMemory((prev) =>
+        prev ? { ...prev, generatedScript: result.script, status: 'ready' } : prev
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Script generation failed.');
     } finally {
@@ -81,6 +89,37 @@ const MemoryDetail: React.FC<MemoryDetailProps> = ({ profile }) => {
     }
   };
 
+  const handleReplacePhoto = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ): Promise<void> => {
+    const file = e.target.files?.[0];
+    if (!file || !memory) return;
+    setReplacingPhoto(true);
+    setError(null);
+    try {
+      const newUrl = await uploadPhoto(file);
+      await updateMemoryPhoto(memory.id, newUrl);
+      setMemory((prev) => prev ? { ...prev, photoUrl: newUrl } : prev);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Photo replacement failed.');
+    } finally {
+      setReplacingPhoto(false);
+      // Reset input so same file can be re-selected if needed
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    }
+  };
+
+  const handleDelete = async (): Promise<void> => {
+    if (!memory) return;
+    try {
+      await deleteMemory(memory.id);
+      navigate('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delete failed.');
+      setConfirmDelete(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="memory-detail__loading">
@@ -100,9 +139,34 @@ const MemoryDetail: React.FC<MemoryDetailProps> = ({ profile }) => {
 
   return (
     <main className="memory-detail">
-      <button className="memory-detail__back" onClick={() => navigate('/')}>
-        ← All Memories
-      </button>
+      <div className="memory-detail__topbar">
+        <button className="memory-detail__back" onClick={() => navigate('/')}>
+          ← All Memories
+        </button>
+
+        {/* Delete control */}
+        {!confirmDelete ? (
+          <button
+            className="memory-detail__delete-btn"
+            onClick={() => setConfirmDelete(true)}
+          >
+            Delete memory
+          </button>
+        ) : (
+          <div className="memory-detail__confirm-delete">
+            <span>Are you sure?</span>
+            <button className="memory-detail__confirm-yes" onClick={handleDelete}>
+              Yes, delete
+            </button>
+            <button
+              className="memory-detail__confirm-no"
+              onClick={() => setConfirmDelete(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Hero photo */}
       <div className="memory-detail__hero">
@@ -116,6 +180,22 @@ const MemoryDetail: React.FC<MemoryDetailProps> = ({ profile }) => {
           <h1 className="memory-detail__title">{memory.location}</h1>
           <p className="memory-detail__date">{memory.dateTaken}</p>
         </div>
+
+        {/* Replace photo button overlaid on hero */}
+        <button
+          className="memory-detail__replace-photo"
+          onClick={() => photoInputRef.current?.click()}
+          disabled={replacingPhoto}
+        >
+          {replacingPhoto ? 'Uploading…' : '↺ Replace photo'}
+        </button>
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleReplacePhoto}
+        />
       </div>
 
       {error && <div className="memory-detail__error">{error}</div>}
@@ -148,7 +228,7 @@ const MemoryDetail: React.FC<MemoryDetailProps> = ({ profile }) => {
                   {generatingVideo ? (
                     <>
                       <span className="spinner-inline" />
-                      Generating video… (this takes 2–4 min)
+                      Generating video… (2–4 min)
                     </>
                   ) : (
                     '▶ Generate Video from This Script'
@@ -174,8 +254,8 @@ const MemoryDetail: React.FC<MemoryDetailProps> = ({ profile }) => {
             ) : (
               <>
                 <p className="memory-detail__generate-text">
-                  Ready to bring this memory to life? The AI will write a personal
-                  letter in your voice from this photo.
+                  Ready to bring this memory to life? The AI will write a
+                  personal letter in your voice from this photo.
                 </p>
                 <button className="btn-primary" onClick={handleGenerateScript}>
                   ✦ Generate My Video Letter
@@ -190,6 +270,4 @@ const MemoryDetail: React.FC<MemoryDetailProps> = ({ profile }) => {
       {memory.gift && <GiftBox gift={memory.gift} />}
     </main>
   );
-};
-
-export default MemoryDetail;
+}

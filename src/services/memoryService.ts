@@ -73,6 +73,22 @@ export async function createMemory(input: CreateMemoryInput): Promise<Memory> {
   });
 }
 
+export async function updateMemoryPhoto(
+  id: string,
+  photoUrl: string
+): Promise<void> {
+  await apiFetch(`/api/memory/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ photoUrl }),
+  });
+}
+
+export async function deleteMemory(id: string): Promise<void> {
+  await apiFetch(`/api/memory/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function updateMemoryScript(
   id: string,
   script: string

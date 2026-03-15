@@ -221,3 +221,86 @@
     from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+
+.memory-detail__topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.memory-detail__delete-btn {
+  background: none;
+  border: none;
+  color: #5a4a3a;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+  letter-spacing: 0.5px;
+}
+
+.memory-detail__delete-btn:hover {
+  color: #e08080;
+}
+
+.memory-detail__confirm-delete {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #e08080;
+}
+
+.memory-detail__confirm-yes {
+  background: rgba(200, 60, 60, 0.15);
+  border: 1px solid rgba(200, 60, 60, 0.4);
+  color: #e08080;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.memory-detail__confirm-yes:hover {
+  background: rgba(200, 60, 60, 0.3);
+}
+
+.memory-detail__confirm-no {
+  background: none;
+  border: none;
+  color: #8a7060;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.memory-detail__replace-photo {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(10, 8, 4, 0.7);
+  border: 1px solid #2a2218;
+  color: #b09070;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.memory-detail__replace-photo:hover:not(:disabled) {
+  border-color: #D4AF37;
+  color: #D4AF37;
+}
+
+.memory-detail__replace-photo:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
