@@ -200,6 +200,12 @@ export default function MemoryDetail({ profile }: MemoryDetailProps) {
 
       {error && <div className="memory-detail__error">{error}</div>}
 
+      {memory.description && (
+        <div className="memory-detail__description">
+          <p>{memory.description}</p>
+        </div>
+      )}
+
       {/* Video */}
       {memory.videoUrl && (
         <VideoPlayer

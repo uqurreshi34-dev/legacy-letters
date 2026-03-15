@@ -304,3 +304,15 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.memory-detail__description {
+  background: #141009;
+  border: 1px solid #2a2218;
+  border-radius: 8px;
+  padding: 20px 28px;
+  margin-bottom: 20px;
+  font-size: 15px;
+  color: #b09070;
+  line-height: 1.8;
+  font-style: italic;
+}
