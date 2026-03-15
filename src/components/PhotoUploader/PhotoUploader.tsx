@@ -1,11 +1,11 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import './PhotoUploader.css';
 
-interface PhotoUploaderProps {
+type PhotoUploaderProps = {
   onFileSelected: (file: File, previewUrl: string) => void;
-}
+};
 
-const PhotoUploader: React.FC<PhotoUploaderProps> = ({ onFileSelected }) => {
+export default function PhotoUploader({ onFileSelected }: PhotoUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -58,6 +58,4 @@ const PhotoUploader: React.FC<PhotoUploaderProps> = ({ onFileSelected }) => {
       />
     </div>
   );
-};
-
-export default PhotoUploader;
+}

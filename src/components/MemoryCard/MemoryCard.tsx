@@ -1,13 +1,12 @@
-import React from 'react';
 import { Memory } from '@interfaces/Memory';
 import './MemoryCard.css';
 
-interface MemoryCardProps {
+type MemoryCardProps = {
   memory: Memory;
   onClick: (memory: Memory) => void;
-}
+};
 
-const MemoryCard: React.FC<MemoryCardProps> = ({ memory, onClick }) => {
+export default function MemoryCard({ memory, onClick }: MemoryCardProps) {
   return (
     <div className="memory-card" onClick={() => onClick(memory)}>
       <div className="memory-card__photo">
@@ -41,6 +40,4 @@ const MemoryCard: React.FC<MemoryCardProps> = ({ memory, onClick }) => {
       </div>
     </div>
   );
-};
-
-export default MemoryCard;
+}

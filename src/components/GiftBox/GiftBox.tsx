@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Gift } from '@interfaces/Gift';
 import './GiftBox.css';
 
-interface GiftBoxProps {
+type GiftBoxProps = {
   gift: Gift;
-}
+};
 
-const GiftBox: React.FC<GiftBoxProps> = ({ gift }) => {
+export default function GiftBox({ gift }: GiftBoxProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -46,6 +46,4 @@ const GiftBox: React.FC<GiftBoxProps> = ({ gift }) => {
       )}
     </div>
   );
-};
-
-export default GiftBox;
+}

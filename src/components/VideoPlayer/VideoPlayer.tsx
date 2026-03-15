@@ -1,13 +1,13 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import './VideoPlayer.css';
 
-interface VideoPlayerProps {
+type VideoPlayerProps = {
   videoUrl: string;
   thumbnailUrl?: string;
   script?: string;
-}
+};
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, thumbnailUrl, script }) => {
+export default function VideoPlayer({ videoUrl, thumbnailUrl, script }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showScript, setShowScript] = useState(false);
@@ -57,6 +57,4 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, thumbnailUrl, scrip
       )}
     </div>
   );
-};
-
-export default VideoPlayer;
+}
