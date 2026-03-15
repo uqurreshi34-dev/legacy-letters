@@ -1,20 +1,22 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PhotoUploader from '@components/PhotoUploader/PhotoUploader';
 import { CreateMemoryInput } from '@interfaces/Memory';
 import { CreateGiftInput } from '@interfaces/Gift';
 import { UserProfile } from '@interfaces/UserProfile';
 import { createMemory, createGift } from '@services/memoryService';
+import { uploadPhoto } from '@services/uploadService';
 import './AddMemory.css';
 
-interface AddMemoryProps {
+type AddMemoryProps = {
   profile: UserProfile;
-}
+};
 
-const AddMemory: React.FC<AddMemoryProps> = ({ profile }) => {
+export default function AddMemory({ profile }: AddMemoryProps) {
   const navigate = useNavigate();
 
-  const [photoUrl, setPhotoUrl] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [location, setLocation] = useState('');
   const [dateTaken, setDateTaken] = useState('');
   const [description, setDescription] = useState('');
@@ -25,16 +27,16 @@ const AddMemory: React.FC<AddMemoryProps> = ({ profile }) => {
   const [giftRevealDate, setGiftRevealDate] = useState('');
 
   const [saving, setSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const handlePhotoSelected = (_file: File, previewUrl: string): void => {
-    // In production: upload file to Supabase/S3 and store the returned URL.
-    // For now we use the local object URL as a placeholder.
-    setPhotoUrl(previewUrl);
+  const handlePhotoSelected = (file: File, preview: string): void => {
+    setSelectedFile(file);
+    setPreviewUrl(preview);
   };
 
   const handleSave = async (): Promise<void> => {
-    if (!photoUrl) { setError('Please upload a photo.'); return; }
+    if (!selectedFile) { setError('Please upload a photo.'); return; }
     if (!location.trim()) { setError('Please enter a location.'); return; }
     if (!dateTaken.trim()) { setError('Please enter an approximate date.'); return; }
 
@@ -42,6 +44,12 @@ const AddMemory: React.FC<AddMemoryProps> = ({ profile }) => {
     setError(null);
 
     try {
+      // Step 1 — upload photo to Supabase, get permanent URL
+      setUploadProgress('Uploading photo…');
+      const photoUrl = await uploadPhoto(selectedFile);
+
+      // Step 2 — save memory to Neon with the real URL
+      setUploadProgress('Saving memory…');
       const input: CreateMemoryInput = {
         profileId: profile.id,
         photoUrl,
@@ -49,10 +57,11 @@ const AddMemory: React.FC<AddMemoryProps> = ({ profile }) => {
         dateTaken: dateTaken.trim(),
         description: description.trim() || undefined,
       };
-
       const memory = await createMemory(input);
 
+      // Step 3 — save gift if one was added
       if (addGift && giftTitle.trim() && giftMessage.trim()) {
+        setUploadProgress('Saving gift…');
         const giftInput: CreateGiftInput = {
           memoryId: memory.id,
           title: giftTitle.trim(),
@@ -67,6 +76,7 @@ const AddMemory: React.FC<AddMemoryProps> = ({ profile }) => {
       setError(err instanceof Error ? err.message : 'Failed to save memory.');
     } finally {
       setSaving(false);
+      setUploadProgress('');
     }
   };
 
@@ -87,6 +97,11 @@ const AddMemory: React.FC<AddMemoryProps> = ({ profile }) => {
         <section className="add-memory__section">
           <label className="add-memory__label">Your photo</label>
           <PhotoUploader onFileSelected={handlePhotoSelected} />
+          {previewUrl && (
+            <p className="add-memory__upload-note">
+              ✓ Photo selected — will be uploaded when you save
+            </p>
+          )}
         </section>
 
         <section className="add-memory__section">
@@ -122,7 +137,6 @@ const AddMemory: React.FC<AddMemoryProps> = ({ profile }) => {
 
         <div className="add-memory__divider" />
 
-        {/* Gift section */}
         <section className="add-memory__section">
           <label className="add-memory__gift-toggle">
             <input
@@ -175,11 +189,15 @@ const AddMemory: React.FC<AddMemoryProps> = ({ profile }) => {
           </>
         )}
 
-        <button className="btn-primary" onClick={handleSave} disabled={saving}>
+        <button
+          className="btn-primary"
+          onClick={handleSave}
+          disabled={saving}
+        >
           {saving ? (
             <>
               <span className="spinner-inline" />
-              Saving…
+              {uploadProgress}
             </>
           ) : (
             'Save This Memory →'
@@ -188,6 +206,4 @@ const AddMemory: React.FC<AddMemoryProps> = ({ profile }) => {
       </div>
     </main>
   );
-};
-
-export default AddMemory;
+}
