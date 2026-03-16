@@ -157,3 +157,23 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+
+.dashboard__signout-btn {
+  background: transparent;
+  color: #3a2a1a;
+  border: 1px solid #2a2218;
+  padding: 13px 20px;
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+
+.dashboard__signout-btn:hover {
+  color: #e08080;
+  border-color: #e08080;
+}
