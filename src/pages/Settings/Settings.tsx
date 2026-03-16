@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '@clerk/clerk-react';
 import { UserProfile } from '@interfaces/UserProfile';
-import { updateProfile } from '@services/memoryService';
+import { generateShareToken } from '@services/memoryService';
 import './Settings.css';
+
+type GetToken = () => Promise<string | null>;
 
 type SettingsProps = {
   profile: UserProfile;
-  onProfileUpdated: (updated: UserProfile) => void;
+  getToken: GetToken;
 };
 
-export default function Settings({ profile, onProfileUpdated }: SettingsProps) {
+export default function Settings({ profile, getToken }: SettingsProps) {
   const navigate = useNavigate();
+  const { user } = useUser();
 
   const [yourName, setYourName] = useState(profile.yourName);
   const [childrenNames, setChildrenNames] = useState(profile.childrenNames);
@@ -18,28 +22,61 @@ export default function Settings({ profile, onProfileUpdated }: SettingsProps) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [generatingShare, setGeneratingShare] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   const handleSave = async (): Promise<void> => {
     if (!yourName.trim()) { setError('Please enter your name.'); return; }
-    if (!childrenNames.trim()) { setError('Please enter your children\'s names.'); return; }
+    if (!childrenNames.trim()) { setError("Please enter your children's names."); return; }
 
     setSaving(true);
     setSaved(false);
     setError(null);
 
     try {
-      const updated = await updateProfile(profile.id, {
-        yourName: yourName.trim(),
-        childrenNames: childrenNames.trim(),
+      const token = await getToken();
+      await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          yourName: yourName.trim(),
+          childrenNames: childrenNames.trim(),
+        }),
       });
-      onProfileUpdated(updated);
+
+      // Reload Clerk user so profile reflects immediately
+      await user?.reload();
       setSaved(true);
-      // Brief pause so user sees confirmation, then go home
       setTimeout(() => navigate('/'), 1200);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save settings.');
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleGenerateShareLink = async (): Promise<void> => {
+    setGeneratingShare(true);
+    try {
+      const token = await generateShareToken(getToken);
+      const url = `${window.location.origin}/share/${token}`;
+      setShareUrl(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate share link.');
+    } finally {
+      setGeneratingShare(false);
+    }
+  };
+
+  const handleCopy = (): void => {
+    if (!shareUrl) return;
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -50,7 +87,7 @@ export default function Settings({ profile, onProfileUpdated }: SettingsProps) {
 
       <h1 className="settings__title">Settings</h1>
       <p className="settings__sub">
-        This is how your vault identifies you and who it's for.
+        Manage your vault identity and share access with your kids.
       </p>
 
       {error && <div className="settings__error">{error}</div>}
@@ -58,9 +95,7 @@ export default function Settings({ profile, onProfileUpdated }: SettingsProps) {
 
       <div className="settings__card">
         <section className="settings__section">
-          <label className="settings__label">
-            Your name
-          </label>
+          <label className="settings__label">Your name</label>
           <p className="settings__hint">
             How you want to be known in your video letters — Dad, Papa, Michael, whatever feels right.
           </p>
@@ -73,9 +108,7 @@ export default function Settings({ profile, onProfileUpdated }: SettingsProps) {
         </section>
 
         <section className="settings__section">
-          <label className="settings__label">
-            Your children's names
-          </label>
+          <label className="settings__label">Your children's names</label>
           <p className="settings__hint">
             These names appear in every generated script — make them exactly how you'd address your kids.
           </p>
@@ -101,6 +134,55 @@ export default function Settings({ profile, onProfileUpdated }: SettingsProps) {
             'Save Settings'
           )}
         </button>
+      </div>
+
+      {/* Share link section */}
+      <div className="settings__card settings__share-card">
+        <h2 className="settings__share-title">Share with your kids</h2>
+        <p className="settings__hint">
+          Generate a private link. Anyone with this link can view your vault in read-only mode — no account needed.
+          Keep it safe and only share it with people you trust.
+        </p>
+
+        {shareUrl ? (
+          <div className="settings__share-url-box">
+            <p className="settings__share-url">{shareUrl}</p>
+            <button className="btn-secondary" onClick={handleCopy}>
+              {copied ? '✓ Copied' : 'Copy link'}
+            </button>
+          </div>
+        ) : (
+          <button
+            className="btn-secondary"
+            onClick={handleGenerateShareLink}
+            disabled={generatingShare}
+          >
+            {generatingShare ? (
+              <>
+                <span className="spinner-inline spinner-inline--dark" />
+                Generating…
+              </>
+            ) : (
+              '🔗 Generate Share Link'
+            )}
+          </button>
+        )}
+
+        {shareUrl && (
+          <p className="settings__share-warning">
+            ⚠ Generating a new link will invalidate the old one.
+          </p>
+        )}
+
+        {shareUrl && (
+          <button
+            className="settings__regenerate"
+            onClick={handleGenerateShareLink}
+            disabled={generatingShare}
+          >
+            Generate new link (invalidates old one)
+          </button>
+        )}
       </div>
     </main>
   );

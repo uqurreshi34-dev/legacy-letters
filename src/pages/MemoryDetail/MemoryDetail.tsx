@@ -17,11 +17,14 @@ import {
 } from '@services/memoryService';
 import './MemoryDetail.css';
 
+type GetToken = () => Promise<string | null>;
+
 type MemoryDetailProps = {
   profile: UserProfile;
+  getToken: GetToken;
 };
 
-export default function MemoryDetail({ profile }: MemoryDetailProps) {
+export default function MemoryDetail({ profile, getToken }: MemoryDetailProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -38,7 +41,7 @@ export default function MemoryDetail({ profile }: MemoryDetailProps) {
     if (!id) return;
     const load = async (): Promise<void> => {
       try {
-        const data = await getMemoryById(id);
+        const data = await getMemoryById(id, getToken);
         setMemory(data);
       } catch {
         setError('Could not load memory.');
@@ -47,7 +50,7 @@ export default function MemoryDetail({ profile }: MemoryDetailProps) {
       }
     };
     load();
-  }, [id]);
+  }, [id, getToken]);
 
   const handleGenerateScript = async (): Promise<void> => {
     if (!memory) return;
@@ -55,7 +58,7 @@ export default function MemoryDetail({ profile }: MemoryDetailProps) {
     setError(null);
     try {
       const result = await generateMemoryScript(memory, profile);
-      await updateMemoryScript(memory.id, result.script);
+      await updateMemoryScript(memory.id, result.script, getToken);
       setMemory((prev) =>
         prev ? { ...prev, generatedScript: result.script, status: 'ready' } : prev
       );
@@ -71,19 +74,19 @@ export default function MemoryDetail({ profile }: MemoryDetailProps) {
     setGeneratingVideo(true);
     setError(null);
     try {
-      await setMemoryStatus(memory.id, 'processing');
+      await setMemoryStatus(memory.id, 'processing', getToken);
       const result = await generateVideoFromPhoto(
         memory.id,
         memory.photoUrl,
         memory.generatedScript
       );
-      await updateMemoryVideo(memory.id, result.videoUrl);
+      await updateMemoryVideo(memory.id, result.videoUrl, getToken);
       setMemory((prev) =>
         prev ? { ...prev, videoUrl: result.videoUrl, status: 'ready' } : prev
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Video generation failed.');
-      await setMemoryStatus(memory.id, 'ready');
+      await setMemoryStatus(memory.id, 'ready', getToken);
     } finally {
       setGeneratingVideo(false);
     }
@@ -98,13 +101,12 @@ export default function MemoryDetail({ profile }: MemoryDetailProps) {
     setError(null);
     try {
       const newUrl = await uploadPhoto(file);
-      await updateMemoryPhoto(memory.id, newUrl);
+      await updateMemoryPhoto(memory.id, newUrl, getToken);
       setMemory((prev) => prev ? { ...prev, photoUrl: newUrl } : prev);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Photo replacement failed.');
     } finally {
       setReplacingPhoto(false);
-      // Reset input so same file can be re-selected if needed
       if (photoInputRef.current) photoInputRef.current.value = '';
     }
   };
@@ -112,7 +114,7 @@ export default function MemoryDetail({ profile }: MemoryDetailProps) {
   const handleDelete = async (): Promise<void> => {
     if (!memory) return;
     try {
-      await deleteMemory(memory.id);
+      await deleteMemory(memory.id, getToken);
       navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Delete failed.');
@@ -144,7 +146,6 @@ export default function MemoryDetail({ profile }: MemoryDetailProps) {
           ← All Memories
         </button>
 
-        {/* Delete control */}
         {!confirmDelete ? (
           <button
             className="memory-detail__delete-btn"
@@ -168,7 +169,6 @@ export default function MemoryDetail({ profile }: MemoryDetailProps) {
         )}
       </div>
 
-      {/* Hero photo */}
       <div className="memory-detail__hero">
         <img
           src={memory.photoUrl}
@@ -181,7 +181,6 @@ export default function MemoryDetail({ profile }: MemoryDetailProps) {
           <p className="memory-detail__date">{memory.dateTaken}</p>
         </div>
 
-        {/* Replace photo button overlaid on hero */}
         <button
           className="memory-detail__replace-photo"
           onClick={() => photoInputRef.current?.click()}
@@ -206,7 +205,6 @@ export default function MemoryDetail({ profile }: MemoryDetailProps) {
         </div>
       )}
 
-      {/* Video */}
       {memory.videoUrl && (
         <VideoPlayer
           videoUrl={memory.videoUrl}
@@ -214,7 +212,6 @@ export default function MemoryDetail({ profile }: MemoryDetailProps) {
         />
       )}
 
-      {/* Script section */}
       <div className="memory-detail__letter-box">
         <div className="memory-detail__letter-header">
           <span className="memory-detail__letter-icon">🎬</span>
@@ -272,7 +269,6 @@ export default function MemoryDetail({ profile }: MemoryDetailProps) {
         )}
       </div>
 
-      {/* Gift */}
       {memory.gift && <GiftBox gift={memory.gift} />}
     </main>
   );

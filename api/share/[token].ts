@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { neon } from '@neondatabase/serverless';
-import { requireAuth } from './_auth';
 
 const sql = neon(process.env.NEON_DATABASE_URL!);
 
@@ -8,13 +7,30 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ): Promise<void> {
+  const { token } = req.query;
 
-  const userId = await requireAuth(req, res);
-  if (!userId) return;
+  if (!token || typeof token !== 'string') {
+    res.status(400).json({ error: 'Token is required' });
+    return;
+  }
 
-  // GET /api/memories — returns only this user's memories
   if (req.method === 'GET') {
     try {
+      // Validate the token
+      const tokenRows = await sql`
+        SELECT user_id FROM share_tokens
+        WHERE token = ${token}
+        AND (expires_at IS NULL OR expires_at > NOW())
+      `;
+
+      if (tokenRows.length === 0) {
+        res.status(404).json({ error: 'Invalid or expired share link' });
+        return;
+      }
+
+      const userId = tokenRows[0].user_id as string;
+
+      // Return all memories for this user (read-only, no auth needed)
       const rows = await sql`
         SELECT
           m.*,
@@ -25,27 +41,11 @@ export default async function handler(
         GROUP BY m.id
         ORDER BY m.created_at DESC
       `;
-      res.status(200).json(rows.map(rowToMemory));
-    } catch (err) {
-      console.error('GET /api/memories error:', err);
-      res.status(500).json({ error: 'Failed to fetch memories' });
-    }
-    return;
-  }
 
-  // POST /api/memories
-  if (req.method === 'POST') {
-    try {
-      const { photoUrl, location, dateTaken, description } = req.body;
-      const rows = await sql`
-        INSERT INTO memories (user_id, photo_url, location, date_taken, description)
-        VALUES (${userId}, ${photoUrl}, ${location}, ${dateTaken}, ${description ?? null})
-        RETURNING *
-      `;
-      res.status(201).json(rowToMemory(rows[0]));
+      res.status(200).json({ memories: rows.map(rowToMemory) });
     } catch (err) {
-      console.error('POST /api/memories error:', err);
-      res.status(500).json({ error: 'Failed to create memory' });
+      console.error(`GET /api/share/${token} error:`, err);
+      res.status(500).json({ error: 'Failed to load shared vault' });
     }
     return;
   }
@@ -57,7 +57,6 @@ function rowToMemory(row: Record<string, unknown>) {
   const giftsRaw = row.gifts as Array<Record<string, unknown>> | null;
   return {
     id:              row.id,
-    userId:          row.user_id,
     photoUrl:        row.photo_url,
     location:        row.location,
     dateTaken:       row.date_taken,
@@ -67,7 +66,6 @@ function rowToMemory(row: Record<string, unknown>) {
     status:          row.status,
     gift:            giftsRaw && giftsRaw.length > 0 ? rowToGift(giftsRaw[0]) : undefined,
     createdAt:       row.created_at,
-    updatedAt:       row.updated_at,
   };
 }
 

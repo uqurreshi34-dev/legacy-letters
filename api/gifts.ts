@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { neon } from '@neondatabase/serverless';
+import { requireAuth } from './_auth';
 
 const sql = neon(process.env.NEON_DATABASE_URL!);
 
@@ -8,20 +9,27 @@ export default async function handler(
   res: VercelResponse
 ): Promise<void> {
 
-  // POST /api/gifts
+  const userId = await requireAuth(req, res);
+  if (!userId) return;
+
   if (req.method === 'POST') {
     try {
       const { memoryId, title, message, mediaUrl, revealDate, isLocked } = req.body;
 
+      // Verify the memory belongs to this user before adding a gift
+      const ownership = await sql`
+        SELECT id FROM memories WHERE id = ${memoryId} AND user_id = ${userId}
+      `;
+      if (ownership.length === 0) {
+        res.status(403).json({ error: 'Forbidden' });
+        return;
+      }
+
       const rows = await sql`
-        INSERT INTO gifts (memory_id, title, message, media_url, reveal_date, is_locked)
+        INSERT INTO gifts (memory_id, user_id, title, message, media_url, reveal_date, is_locked)
         VALUES (
-          ${memoryId},
-          ${title},
-          ${message},
-          ${mediaUrl    ?? null},
-          ${revealDate  ?? null},
-          ${isLocked    ?? false}
+          ${memoryId}, ${userId}, ${title}, ${message},
+          ${mediaUrl ?? null}, ${revealDate ?? null}, ${isLocked ?? false}
         )
         RETURNING *
       `;

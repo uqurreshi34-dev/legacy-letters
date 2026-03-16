@@ -1,21 +1,27 @@
 /**
  * memoryService.ts
  * All data operations go through the /api endpoints.
- * The browser never touches Neon directly.
+ * Every request carries the Clerk session token for server-side auth.
  */
 
 import { Memory, CreateMemoryInput } from '@interfaces/Memory';
 import { Gift, CreateGiftInput } from '@interfaces/Gift';
-import { UserProfile, CreateProfileInput } from '@interfaces/UserProfile';
+
+type GetToken = () => Promise<string | null>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function apiFetch<T>(
   path: string,
+  getToken: GetToken,
   options?: RequestInit
 ): Promise<T> {
+  const token = await getToken();
   const res = await fetch(path, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     ...options,
   });
   if (!res.ok) {
@@ -25,75 +31,41 @@ async function apiFetch<T>(
   return res.json();
 }
 
-// ─── User Profile ──────────────────────────────────────────────────────────────
-
-export async function getOrCreateProfile(
-  input: CreateProfileInput
-): Promise<UserProfile> {
-  // Try to fetch existing profile first
-  try {
-    return await apiFetch<UserProfile>('/api/profile');
-  } catch {
-    // None exists — create one
-    return await apiFetch<UserProfile>('/api/profile', {
-      method: 'POST',
-      body: JSON.stringify(input),
-    });
-  }
-}
-
-export async function updateProfile(
-  _id: string,
-  input: Partial<CreateProfileInput>
-): Promise<UserProfile> {
-  return apiFetch<UserProfile>('/api/profile', {
-    method: 'POST',
-    body: JSON.stringify(input),
-  });
-}
-
 // ─── Memories ─────────────────────────────────────────────────────────────────
 
-export async function getAllMemories(profileId: string): Promise<Memory[]> {
-  return apiFetch<Memory[]>(`/api/memories?profileId=${profileId}`);
+export async function getAllMemories(
+  getToken: GetToken
+): Promise<Memory[]> {
+  return apiFetch<Memory[]>('/api/memories', getToken);
 }
 
-export async function getMemoryById(id: string): Promise<Memory | null> {
+export async function getMemoryById(
+  id: string,
+  getToken: GetToken
+): Promise<Memory | null> {
   try {
-    return await apiFetch<Memory>(`/api/memory/${id}`);
+    return await apiFetch<Memory>(`/api/memory/${id}`, getToken);
   } catch {
     return null;
   }
 }
 
-export async function createMemory(input: CreateMemoryInput): Promise<Memory> {
-  return apiFetch<Memory>('/api/memories', {
+export async function createMemory(
+  input: CreateMemoryInput,
+  getToken: GetToken
+): Promise<Memory> {
+  return apiFetch<Memory>('/api/memories', getToken, {
     method: 'POST',
     body: JSON.stringify(input),
   });
 }
 
-export async function updateMemoryPhoto(
-  id: string,
-  photoUrl: string
-): Promise<void> {
-  await apiFetch(`/api/memory/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ photoUrl }),
-  });
-}
-
-export async function deleteMemory(id: string): Promise<void> {
-  await apiFetch(`/api/memory/${id}`, {
-    method: 'DELETE',
-  });
-}
-
 export async function updateMemoryScript(
   id: string,
-  script: string
+  script: string,
+  getToken: GetToken
 ): Promise<void> {
-  await apiFetch(`/api/memory/${id}`, {
+  await apiFetch(`/api/memory/${id}`, getToken, {
     method: 'PATCH',
     body: JSON.stringify({ generatedScript: script, status: 'ready' }),
   });
@@ -101,29 +73,65 @@ export async function updateMemoryScript(
 
 export async function updateMemoryVideo(
   id: string,
-  videoUrl: string
+  videoUrl: string,
+  getToken: GetToken
 ): Promise<void> {
-  await apiFetch(`/api/memory/${id}`, {
+  await apiFetch(`/api/memory/${id}`, getToken, {
     method: 'PATCH',
     body: JSON.stringify({ videoUrl }),
   });
 }
 
+export async function updateMemoryPhoto(
+  id: string,
+  photoUrl: string,
+  getToken: GetToken
+): Promise<void> {
+  await apiFetch(`/api/memory/${id}`, getToken, {
+    method: 'PATCH',
+    body: JSON.stringify({ photoUrl }),
+  });
+}
+
 export async function setMemoryStatus(
   id: string,
-  status: Memory['status']
+  status: Memory['status'],
+  getToken: GetToken
 ): Promise<void> {
-  await apiFetch(`/api/memory/${id}`, {
+  await apiFetch(`/api/memory/${id}`, getToken, {
     method: 'PATCH',
     body: JSON.stringify({ status }),
   });
 }
 
+export async function deleteMemory(
+  id: string,
+  getToken: GetToken
+): Promise<void> {
+  await apiFetch(`/api/memory/${id}`, getToken, {
+    method: 'DELETE',
+  });
+}
+
 // ─── Gifts ────────────────────────────────────────────────────────────────────
 
-export async function createGift(input: CreateGiftInput): Promise<Gift> {
-  return apiFetch<Gift>('/api/gifts', {
+export async function createGift(
+  input: CreateGiftInput,
+  getToken: GetToken
+): Promise<Gift> {
+  return apiFetch<Gift>('/api/gifts', getToken, {
     method: 'POST',
     body: JSON.stringify(input),
   });
+}
+
+// ─── Share tokens ─────────────────────────────────────────────────────────────
+
+export async function generateShareToken(
+  getToken: GetToken
+): Promise<string> {
+  const data = await apiFetch<{ token: string }>('/api/share', getToken, {
+    method: 'POST',
+  });
+  return data.token;
 }

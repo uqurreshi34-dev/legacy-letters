@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { neon } from '@neondatabase/serverless';
+import { requireAuth } from '../_auth';
 
 const sql = neon(process.env.NEON_DATABASE_URL!);
 
@@ -14,6 +15,9 @@ export default async function handler(
     return;
   }
 
+  const userId = await requireAuth(req, res);
+  if (!userId) return;
+
   // GET /api/memory/:id
   if (req.method === 'GET') {
     try {
@@ -23,7 +27,7 @@ export default async function handler(
           json_agg(g.*) FILTER (WHERE g.id IS NOT NULL) AS gifts
         FROM memories m
         LEFT JOIN gifts g ON g.memory_id = m.id
-        WHERE m.id = ${id}
+        WHERE m.id = ${id} AND m.user_id = ${userId}
         GROUP BY m.id
       `;
       if (rows.length === 0) {
@@ -38,11 +42,10 @@ export default async function handler(
     return;
   }
 
-  // PATCH /api/memory/:id — update script, video url, photo url, or status
+  // PATCH /api/memory/:id
   if (req.method === 'PATCH') {
     try {
       const { generatedScript, videoUrl, photoUrl, status } = req.body;
-
       await sql`
         UPDATE memories
         SET
@@ -51,7 +54,7 @@ export default async function handler(
           photo_url        = COALESCE(${photoUrl        ?? null}, photo_url),
           status           = COALESCE(${status          ?? null}, status),
           updated_at       = NOW()
-        WHERE id = ${id}
+        WHERE id = ${id} AND user_id = ${userId}
       `;
       res.status(200).json({ success: true });
     } catch (err) {
@@ -64,7 +67,7 @@ export default async function handler(
   // DELETE /api/memory/:id
   if (req.method === 'DELETE') {
     try {
-      await sql`DELETE FROM memories WHERE id = ${id}`;
+      await sql`DELETE FROM memories WHERE id = ${id} AND user_id = ${userId}`;
       res.status(200).json({ success: true });
     } catch (err) {
       console.error(`DELETE /api/memory/${id} error:`, err);
@@ -80,7 +83,7 @@ function rowToMemory(row: Record<string, unknown>) {
   const giftsRaw = row.gifts as Array<Record<string, unknown>> | null;
   return {
     id:              row.id,
-    profileId:       row.profile_id,
+    userId:          row.user_id,
     photoUrl:        row.photo_url,
     location:        row.location,
     dateTaken:       row.date_taken,

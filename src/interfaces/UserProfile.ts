@@ -1,13 +1,14 @@
+// Identity now comes from Clerk.
+// yourName and childrenNames are stored in Clerk's publicMetadata.
+
 export interface UserProfile {
-    id: string;
-    yourName: string;
-    childrenNames: string;
-    photoUrl?: string;
-    createdAt: string;
-  }
-  
-  export interface CreateProfileInput {
-    yourName: string;
-    childrenNames: string;
-    photoUrl?: string;
-  }
+  clerkId: string;
+  yourName: string;
+  childrenNames: string;
+  email: string;
+}
+
+export interface ProfileMetadata {
+  yourName?: string;
+  childrenNames?: string;
+}

@@ -8,11 +8,14 @@ import { createMemory, createGift } from '@services/memoryService';
 import { uploadPhoto } from '@services/uploadService';
 import './AddMemory.css';
 
+type GetToken = () => Promise<string | null>;
+
 type AddMemoryProps = {
   profile: UserProfile;
+  getToken: GetToken;
 };
 
-export default function AddMemory({ profile }: AddMemoryProps) {
+export default function AddMemory({ profile, getToken }: AddMemoryProps) {
   const navigate = useNavigate();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -44,22 +47,19 @@ export default function AddMemory({ profile }: AddMemoryProps) {
     setError(null);
 
     try {
-      // Step 1 — upload photo to Supabase, get permanent URL
       setUploadProgress('Uploading photo…');
       const photoUrl = await uploadPhoto(selectedFile);
 
-      // Step 2 — save memory to Neon with the real URL
       setUploadProgress('Saving memory…');
       const input: CreateMemoryInput = {
-        profileId: profile.id,
+        profileId: profile.clerkId,
         photoUrl,
         location: location.trim(),
         dateTaken: dateTaken.trim(),
         description: description.trim() || undefined,
       };
-      const memory = await createMemory(input);
+      const memory = await createMemory(input, getToken);
 
-      // Step 3 — save gift if one was added
       if (addGift && giftTitle.trim() && giftMessage.trim()) {
         setUploadProgress('Saving gift…');
         const giftInput: CreateGiftInput = {
@@ -68,7 +68,7 @@ export default function AddMemory({ profile }: AddMemoryProps) {
           message: giftMessage.trim(),
           revealDate: giftRevealDate.trim() || undefined,
         };
-        await createGift(giftInput);
+        await createGift(giftInput, getToken);
       }
 
       navigate(`/memory/${memory.id}`);

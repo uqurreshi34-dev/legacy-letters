@@ -6,11 +6,14 @@ import { UserProfile } from '@interfaces/UserProfile';
 import { getAllMemories } from '@services/memoryService';
 import './Dashboard.css';
 
+type GetToken = () => Promise<string | null>;
+
 type DashboardProps = {
   profile: UserProfile;
+  getToken: GetToken;
 };
 
-export default function Dashboard({ profile }: DashboardProps) {
+export default function Dashboard({ profile, getToken }: DashboardProps) {
   const navigate = useNavigate();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +22,7 @@ export default function Dashboard({ profile }: DashboardProps) {
   useEffect(() => {
     const load = async (): Promise<void> => {
       try {
-        const data = await getAllMemories(profile.id);
+        const data = await getAllMemories(getToken);
         setMemories(data);
       } catch (err) {
         setError('Could not load memories. Check your Neon connection string in .env');
@@ -29,7 +32,7 @@ export default function Dashboard({ profile }: DashboardProps) {
       }
     };
     load();
-  }, [profile.id]);
+  }, [profile.clerkId, getToken]);
 
   const readyCount = memories.filter((m) => m.status === 'ready').length;
 

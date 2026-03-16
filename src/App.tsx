@@ -1,40 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useUser, SignIn, useAuth } from '@clerk/clerk-react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from '@pages/Dashboard/Dashboard';
 import MemoryDetail from '@pages/MemoryDetail/MemoryDetail';
 import AddMemory from '@pages/AddMemory/AddMemory';
 import Settings from '@pages/Settings/Settings';
+import ShareView from '@pages/ShareView/ShareView';
 import { UserProfile } from '@interfaces/UserProfile';
-import { getOrCreateProfile } from '@services/memoryService';
 import './App.css';
 
 export default function App() {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { isLoaded, isSignedIn, user } = useUser();
+  const { getToken } = useAuth();
 
-  useEffect(() => {
-    const bootstrap = async (): Promise<void> => {
-      try {
-        const p = await getOrCreateProfile({
-          yourName: '',
-          childrenNames: '',
-        });
-        setProfile(p);
-      } catch (err) {
-        setError(
-          'Could not connect to the database. ' +
-          'Check NEON_DATABASE_URL in your Vercel environment variables.'
-        );
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    bootstrap();
-  }, []);
-
-  if (loading) {
+  // Still loading Clerk session
+  if (!isLoaded) {
     return (
       <div className="app-loading">
         <div className="spinner" />
@@ -43,44 +22,76 @@ export default function App() {
     );
   }
 
-  if (error || !profile) {
-    return (
-      <div className="app-error">
-        <h2>Connection Error</h2>
-        <p>{error}</p>
-        <code>NEON_DATABASE_URL=postgresql://...</code>
-      </div>
-    );
-  }
+  // Build profile from Clerk user data
+  const profile: UserProfile | null = isSignedIn && user
+    ? {
+        clerkId: user.id,
+        yourName:      (user.publicMetadata?.yourName      as string) || '',
+        childrenNames: (user.publicMetadata?.childrenNames as string) || '',
+        email: user.primaryEmailAddress?.emailAddress || '',
+      }
+    : null;
 
   return (
     <BrowserRouter>
-      <div className="app">
-        <Routes>
-          <Route
-            path="/"
-            element={<Dashboard profile={profile} />}
-          />
-          <Route
-            path="/memory/:id"
-            element={<MemoryDetail profile={profile} />}
-          />
-          <Route
-            path="/add"
-            element={<AddMemory profile={profile} />}
-          />
-          <Route
-            path="/settings"
-            element={
-              <Settings
-                profile={profile}
-                onProfileUpdated={setProfile}
-              />
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
+      <Routes>
+        {/* Share route is public — no auth needed */}
+        <Route path="/share/:token" element={<ShareView />} />
+
+        {/* All other routes require sign in */}
+        <Route
+          path="*"
+          element={
+            !isSignedIn ? (
+              <div className="app-signin">
+                <SignIn routing="hash" />
+              </div>
+            ) : (
+              <div className="app">
+                <Routes>
+                  <Route
+                    path="/"
+                    element={
+                      <Dashboard
+                        profile={profile!}
+                        getToken={getToken}
+                      />
+                    }
+                  />
+                  <Route
+                    path="/memory/:id"
+                    element={
+                      <MemoryDetail
+                        profile={profile!}
+                        getToken={getToken}
+                      />
+                    }
+                  />
+                  <Route
+                    path="/add"
+                    element={
+                      <AddMemory
+                        profile={profile!}
+                        getToken={getToken}
+                      />
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <Settings
+                        profile={profile!}
+                        getToken={getToken}
+                      />
+                    }
+                  />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </div>
+            )
+          }
+        />
+      </Routes>
     </BrowserRouter>
   );
 }
