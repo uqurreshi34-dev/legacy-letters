@@ -16,7 +16,6 @@ export default async function handler(
 
   if (req.method === 'GET') {
     try {
-      // Validate the token
       const tokenRows = await sql`
         SELECT user_id FROM share_tokens
         WHERE token = ${token}
@@ -30,7 +29,6 @@ export default async function handler(
 
       const userId = tokenRows[0].user_id as string;
 
-      // Return all memories for this user (read-only, no auth needed)
       const rows = await sql`
         SELECT
           m.*,

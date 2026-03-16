@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useClerk } from '@clerk/clerk-react';
 import MemoryCard from '@components/MemoryCard/MemoryCard';
 import { Memory } from '@interfaces/Memory';
 import { UserProfile } from '@interfaces/UserProfile';
@@ -15,6 +16,7 @@ type DashboardProps = {
 
 export default function Dashboard({ profile, getToken }: DashboardProps) {
   const navigate = useNavigate();
+  const { signOut } = useClerk();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +61,12 @@ export default function Dashboard({ profile, getToken }: DashboardProps) {
             onClick={() => navigate('/add')}
           >
             + Add Memory
+          </button>
+          <button
+            className="dashboard__signout-btn"
+            onClick={() => signOut()}
+          >
+            Sign out
           </button>
         </div>
       </header>
