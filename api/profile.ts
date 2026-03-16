@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClerkClient } from '@clerk/backend';
-import { requireAuth } from './_auth';
+import { requireAuth } from './_auth.js';
 
 const clerk = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY!,
