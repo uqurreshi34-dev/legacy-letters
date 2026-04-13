@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useUser } from '@clerk/clerk-react';
 import GiftBox from '@components/GiftBox/GiftBox';
 import VideoPlayer from '@components/VideoPlayer/VideoPlayer';
+import AudioRecorder from '@components/AudioRecorder/AudioRecorder';
 import { Memory } from '@interfaces/Memory';
 import { UserProfile } from '@interfaces/UserProfile';
 import { generateMemoryScript } from '@services/claudeService';
 import { generateVideoFromPhoto } from '@services/videoService';
-import { uploadPhoto } from '@services/uploadService';
+import { uploadPhoto, uploadAudio } from '@services/uploadService';
 import {
   getMemoryById,
   updateMemoryScript,
@@ -27,6 +29,7 @@ type MemoryDetailProps = {
 export default function MemoryDetail({ profile, getToken }: MemoryDetailProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useUser();
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   const [memory, setMemory] = useState<Memory | null>(null);
@@ -36,6 +39,13 @@ export default function MemoryDetail({ profile, getToken }: MemoryDetailProps) {
   const [replacingPhoto, setReplacingPhoto] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Audio state
+  const [audioFile, setAudioFile] = useState<File | Blob | null>(null);
+  const [uploadingAudio, setUploadingAudio] = useState(false);
+
+  // Get HeyGen key from Clerk metadata
+  const heygenApiKey = (user?.publicMetadata?.heygenApiKey as string) || '';
 
   useEffect(() => {
     if (!id) return;
@@ -70,16 +80,34 @@ export default function MemoryDetail({ profile, getToken }: MemoryDetailProps) {
   };
 
   const handleGenerateVideo = async (): Promise<void> => {
-    if (!memory?.generatedScript) return;
+    if (!memory) return;
+    if (!audioFile) {
+      setError('Please record or upload your voice first.');
+      return;
+    }
+    if (!heygenApiKey) {
+      setError('Please add your HeyGen API key in Settings before generating videos.');
+      return;
+    }
+
     setGeneratingVideo(true);
+    setUploadingAudio(true);
     setError(null);
+
     try {
+      // Upload audio to Supabase first
+      const audioUrl = await uploadAudio(audioFile);
+      setUploadingAudio(false);
+
       await setMemoryStatus(memory.id, 'processing', getToken);
+
       const result = await generateVideoFromPhoto(
         memory.id,
         memory.photoUrl,
-        memory.generatedScript
+        audioUrl,
+        heygenApiKey
       );
+
       await updateMemoryVideo(memory.id, result.videoUrl, getToken);
       setMemory((prev) =>
         prev ? { ...prev, videoUrl: result.videoUrl, status: 'ready' } : prev
@@ -89,6 +117,7 @@ export default function MemoryDetail({ profile, getToken }: MemoryDetailProps) {
       await setMemoryStatus(memory.id, 'ready', getToken);
     } finally {
       setGeneratingVideo(false);
+      setUploadingAudio(false);
     }
   };
 
@@ -120,6 +149,12 @@ export default function MemoryDetail({ profile, getToken }: MemoryDetailProps) {
       setError(err instanceof Error ? err.message : 'Delete failed.');
       setConfirmDelete(false);
     }
+  };
+
+  const getVideoButtonLabel = (): string => {
+    if (uploadingAudio) return 'Uploading audio…';
+    if (generatingVideo) return 'Generating video… (2–6 min)';
+    return '▶ Generate Video Letter';
   };
 
   if (loading) {
@@ -212,6 +247,7 @@ export default function MemoryDetail({ profile, getToken }: MemoryDetailProps) {
         />
       )}
 
+      {/* Script section */}
       <div className="memory-detail__letter-box">
         <div className="memory-detail__letter-header">
           <span className="memory-detail__letter-icon">🎬</span>
@@ -221,20 +257,37 @@ export default function MemoryDetail({ profile, getToken }: MemoryDetailProps) {
         {memory.generatedScript ? (
           <div>
             <p className="memory-detail__script">{memory.generatedScript}</p>
+
+            {/* Voice recording section */}
+            {!memory.videoUrl && (
+              <div className="memory-detail__voice-section">
+                <h3 className="memory-detail__voice-title">
+                  Your voice
+                </h3>
+                <p className="memory-detail__voice-hint">
+                  Read the script above aloud and record it here — or upload a pre-recorded file.
+                  HeyGen will animate your photo to match your voice.
+                </p>
+                <AudioRecorder
+                  onAudioReady={(file) => setAudioFile(file)}
+                />
+              </div>
+            )}
+
             <div className="memory-detail__actions">
               {!memory.videoUrl && (
                 <button
                   className="btn-primary"
                   onClick={handleGenerateVideo}
-                  disabled={generatingVideo}
+                  disabled={generatingVideo || !audioFile}
                 >
                   {generatingVideo ? (
                     <>
                       <span className="spinner-inline" />
-                      Generating video… (2–4 min)
+                      {getVideoButtonLabel()}
                     </>
                   ) : (
-                    '▶ Generate Video from This Script'
+                    '▶ Generate Video Letter'
                   )}
                 </button>
               )}
@@ -246,6 +299,18 @@ export default function MemoryDetail({ profile, getToken }: MemoryDetailProps) {
                 {generatingScript ? 'Writing…' : '↺ Regenerate Script'}
               </button>
             </div>
+
+            {!heygenApiKey && !memory.videoUrl && (
+              <p className="memory-detail__heygen-warning">
+                ⚠ You need a HeyGen API key to generate videos.{' '}
+                <button
+                  className="memory-detail__settings-link"
+                  onClick={() => navigate('/settings')}
+                >
+                  Add it in Settings →
+                </button>
+              </p>
+            )}
           </div>
         ) : (
           <div className="memory-detail__generate-prompt">
@@ -261,7 +326,7 @@ export default function MemoryDetail({ profile, getToken }: MemoryDetailProps) {
                   personal letter in your voice from this photo.
                 </p>
                 <button className="btn-primary" onClick={handleGenerateScript}>
-                  ✦ Generate My Video Letter
+                  ✦ Generate My Video Letter Script
                 </button>
               </>
             )}

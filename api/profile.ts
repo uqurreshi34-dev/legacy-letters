@@ -14,15 +14,15 @@ export default async function handler(
   const userId = await requireAuth(req, res);
   if (!userId) return;
 
-  // PATCH /api/profile — save yourName and childrenNames to Clerk metadata
   if (req.method === 'PATCH') {
     try {
-      const { yourName, childrenNames } = req.body;
+      const { yourName, childrenNames, heygenApiKey } = req.body;
 
       await clerk.users.updateUserMetadata(userId, {
         publicMetadata: {
           yourName:      yourName      ?? undefined,
           childrenNames: childrenNames ?? undefined,
+          heygenApiKey:  heygenApiKey  ?? undefined,
         },
       });
 

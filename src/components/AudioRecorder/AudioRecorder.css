@@ -1,0 +1,118 @@
+.audio-recorder {
+    width: 100%;
+  }
+  
+  .audio-recorder__error {
+    font-size: 13px;
+    color: #e08080;
+    margin: 0 0 12px 0;
+  }
+  
+  .audio-recorder__options {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  
+  .audio-recorder__or {
+    font-size: 12px;
+    color: #5a4a3a;
+  }
+  
+  .audio-recorder__btn {
+    border: none;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 12px 20px;
+    transition: opacity 0.2s, background 0.2s;
+    letter-spacing: 0.5px;
+  }
+  
+  .audio-recorder__btn--record {
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid #D4AF37;
+    color: #D4AF37;
+  }
+  
+  .audio-recorder__btn--record:hover {
+    background: rgba(212, 175, 55, 0.2);
+  }
+  
+  .audio-recorder__btn--upload {
+    background: transparent;
+    border: 1px solid #2a2218;
+    color: #8a7060;
+  }
+  
+  .audio-recorder__btn--upload:hover {
+    border-color: #D4AF37;
+    color: #D4AF37;
+  }
+  
+  .audio-recorder__btn--stop {
+    background: rgba(200, 60, 60, 0.15);
+    border: 1px solid rgba(200, 60, 60, 0.4);
+    color: #e08080;
+  }
+  
+  .audio-recorder__btn--stop:hover {
+    background: rgba(200, 60, 60, 0.25);
+  }
+  
+  .audio-recorder__recording {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .audio-recorder__pulse {
+    width: 12px;
+    height: 12px;
+    background: #e08080;
+    border-radius: 50%;
+    animation: pulse 1s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  
+  .audio-recorder__timer {
+    font-size: 18px;
+    color: #e8dcc8;
+    font-variant-numeric: tabular-nums;
+    min-width: 48px;
+  }
+  
+  .audio-recorder__preview {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .audio-recorder__player {
+    width: 100%;
+    accent-color: #D4AF37;
+  }
+  
+  .audio-recorder__reset {
+    background: none;
+    border: none;
+    color: #5a4a3a;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    transition: color 0.2s;
+    text-align: left;
+  }
+  
+  .audio-recorder__reset:hover {
+    color: #8a7060;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.8); }
+  }
