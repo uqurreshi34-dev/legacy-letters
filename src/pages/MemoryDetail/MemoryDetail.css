@@ -316,3 +316,47 @@
   line-height: 1.8;
   font-style: italic;
 }
+
+.memory-detail__voice-section {
+  background: #0a0804;
+  border: 1px solid #2a2218;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.memory-detail__voice-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  color: #f5ede0;
+  margin: 0 0 8px 0;
+}
+
+.memory-detail__voice-hint {
+  font-size: 13px;
+  color: #5a4a3a;
+  line-height: 1.6;
+  margin: 0 0 16px 0;
+}
+
+.memory-detail__heygen-warning {
+  font-size: 13px;
+  color: #8a7060;
+  margin: 16px 0 0 0;
+  line-height: 1.6;
+}
+
+.memory-detail__settings-link {
+  background: none;
+  border: none;
+  color: #D4AF37;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.memory-detail__settings-link:hover {
+  opacity: 0.8;
+}
